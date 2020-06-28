@@ -114,11 +114,13 @@ end
 
 desc "Compile China flavor."
 lane :do_compile_china do |options|
+  build_type = options[:build_type]
   begin
     gradle(
       task: "assemble",
       flavor: "China",
-      build_type: "Release",
+      build_type: build_type,
+#      build_type: "Release",
       print_command_output: false
       )
     wechatwork(
@@ -140,11 +142,13 @@ end
 
 desc "Compile Google flavor."
 lane :do_compile_google do |options|
+  build_type = options[:build_type]
   begin
     gradle(
       task: "assemble",
       flavor: "Google",
-      build_type: "Release",
+#      build_type: "Release",
+      build_type: build_type,
       print_command_output: false
       )
     wechatwork(
@@ -198,7 +202,13 @@ lane :do_publish_china do |options|
   #  build_type: "Release",
   #  print_command_output: false
   #  )
-  do_compile_china
+#  do_compile_china
+  if "2" == ENV['HTFLAVOR']
+     do_compile_china(build_type: "Dev")
+  else
+     do_compile_china(build_type: "release")
+  end
+
   if "1" != ENV['TRIGER']
     do_upload_firim
   end
@@ -212,7 +222,13 @@ lane :do_publish_google do |options|
   #  build_type: "Release",
   #  print_command_output: false
   #)
-  do_compile_google
+  
+  if "2" == ENV['HTFLAVOR']
+     do_compile_google(build_type: "Dev")
+  else
+     do_compile_google(build_type: "release")
+  end
+
   if "1" != ENV['TRIGER']
     do_upload_firim
   end
@@ -257,7 +273,14 @@ lane :do_upload_firim do
       markdown: "#{flavor} app uploading.",
       mentioned_mobile_list: []
     )
-    change_log = "[#{flavor}]+[#{ENV['GIT_BRANCH']}]\r\n---\r\n" + ENV['CHANGELOG']
+
+    # 增加条件判断 是否为DEV环境包
+    if "2" == ENV['HTFLAVOR']
+      change_log = "[#{flavor}]+[#{ENV['GIT_BRANCH']} --此包为测试环境包，不可用于生产]\r\n---\r\n" + ENV['CHANGELOG']
+    else
+      change_log = "[#{flavor}]+[#{ENV['GIT_BRANCH']}]\r\n---\r\n" + ENV['CHANGELOG']
+    end
+
     firim(
       apk: lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH],
       app_version: get_version_name().tr(",",""),
